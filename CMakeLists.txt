@@ -3,7 +3,9 @@ project(vulkan_test)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(vulkan_test main.cpp)
+add_executable(vulkan_test main.cpp
+        hello_triangle.cpp
+        hello_triangle.h)
 
 # Vulkan
 set(VK_ICD_FILENAMES /Users/andrei/libs/VulkanSDK/macOS/share/vulkan/icd.d/MoltenVK_icd.json)
