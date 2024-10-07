@@ -21,12 +21,12 @@ private:
     VkInstance instance;
 
     void initWindow();
-
     void initVulkan();
-
+    void createVkInstance();
+    void pickPhysicalDevice();
     void mainLoop();
-
     void cleanup();
+
 };
 
 

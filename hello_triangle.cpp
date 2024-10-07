@@ -48,7 +48,7 @@ void hello_triangle::initWindow() {
     window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan Hello", nullptr, nullptr);
 }
 
-void hello_triangle::initVulkan() {
+void hello_triangle::createVkInstance() {
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = "Hello Triangle";
@@ -100,6 +100,15 @@ void hello_triangle::initVulkan() {
     if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
         throw std::runtime_error("failed to create instance!");
     }
+}
+
+void hello_triangle::pickPhysicalDevice() {
+
+}
+
+void hello_triangle::initVulkan() {
+    createVkInstance();
+    pickPhysicalDevice();
 }
 
 void hello_triangle::mainLoop() {
