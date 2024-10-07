@@ -18,7 +18,8 @@ int main() {
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
 
     std::cout << extensionCount << " extensions supported\n";
-    auto *pProperties = static_cast<VkExtensionProperties *>(malloc(extensionCount));
+    auto *pProperties = static_cast<VkExtensionProperties *>
+            (malloc(extensionCount *sizeof(VkExtensionProperties)));
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, pProperties);
     for (int i = 0; i < extensionCount; ++i) {
         std::cout << pProperties[i].extensionName << ", ver:" << pProperties[i].specVersion << "\n";
