@@ -19,6 +19,7 @@ public:
 private:
     GLFWwindow* window;
     VkInstance instance;
+    VkPhysicalDevice physicalDevice;
 
     void initWindow();
     void initVulkan();
@@ -26,7 +27,6 @@ private:
     void pickPhysicalDevice();
     void mainLoop();
     void cleanup();
-
 };
 
 

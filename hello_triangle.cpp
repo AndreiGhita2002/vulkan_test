@@ -38,6 +38,18 @@ bool checkValidationLayerSupport() {
     return true;
 }
 
+bool isDeviceSuitable(VkPhysicalDevice device) {
+    VkPhysicalDeviceProperties deviceProperties;
+    vkGetPhysicalDeviceProperties(device, &deviceProperties);
+    VkPhysicalDeviceFeatures deviceFeatures;
+    vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+    // only for devices that support geometry shaders
+    // (not actually necessary for this program)
+    return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
+           deviceFeatures.geometryShader;
+}
+
 void hello_triangle::initWindow() {
     glfwInit();
     // Tell GLFW not to use OpenGL.
@@ -103,7 +115,25 @@ void hello_triangle::createVkInstance() {
 }
 
 void hello_triangle::pickPhysicalDevice() {
+    uint32_t deviceCount = 0;
+    physicalDevice = VK_NULL_HANDLE;
+    vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+    if (deviceCount == 0) {
+        throw std::runtime_error("failed to find GPUs with Vulkan support!");
+    }
+    std::vector<VkPhysicalDevice> devices(deviceCount);
+    vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
+    for (const auto& device : devices) {
+        if (isDeviceSuitable(device)) {
+            physicalDevice = device;
+            break;
+        }
+    }
+
+    if (physicalDevice == VK_NULL_HANDLE) {
+        throw std::runtime_error("failed to find a suitable GPU!");
+    }
 }
 
 void hello_triangle::initVulkan() {
@@ -119,6 +149,7 @@ void hello_triangle::mainLoop() {
 
 void hello_triangle::cleanup() {
     vkDestroyInstance(instance, nullptr);
+    // physicalDevice is implicitly destroyed when instance is
     glfwDestroyWindow(window);
     glfwTerminate();
 }
