@@ -463,14 +463,14 @@ void hello_triangle::mainLoop() {
 }
 
 void hello_triangle::cleanup() {
+    vkDestroySwapchainKHR(device, swapChain, nullptr); // before device
+    vkDestroyDevice(device, nullptr);
+    // graphics queue is implicitly destroyed with logical device
     if (enableValidationLayers)
         DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
     // physicalDevice is implicitly destroyed when instance is
-    vkDestroySwapchainKHR(device, swapChain, nullptr); // before device
-    vkDestroyDevice(device, nullptr);
-    // graphics queue is implicitly destroyed with logical device
     glfwDestroyWindow(window);
     glfwTerminate();
 }
