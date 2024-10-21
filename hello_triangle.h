@@ -20,11 +20,14 @@ private:
     GLFWwindow* window;
     VkInstance instance;
     VkPhysicalDevice physicalDevice;
+    VkDebugUtilsMessengerEXT debugMessenger;
 
     void initWindow();
     void initVulkan();
     void createVkInstance();
     void pickPhysicalDevice();
+    void createLogicalDevice();
+    void setupDebugMessenger();
     void mainLoop();
     void cleanup();
 };

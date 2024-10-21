@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <stdexcept>
 #include <vector>
+#include <iostream>
 #include "hello_triangle.h"
 
 const uint32_t WIDTH = 800;
@@ -15,6 +16,9 @@ const std::vector<const char*> validationLayers = {
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
 #else
+//todo Validation layers not available; for some reason
+// function checkValidationLayerSupport() was returning false,
+// which would make createVkInstance() throw an error
 const bool enableValidationLayers = true;
 #endif
 
@@ -44,11 +48,65 @@ bool isDeviceSuitable(VkPhysicalDevice device) {
     VkPhysicalDeviceFeatures deviceFeatures;
     vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
-    // only for devices that support geometry shaders
-    // (not actually necessary for this program)
-    return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
-           deviceFeatures.geometryShader;
+    return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 }
+
+std::vector<const char*> getRequiredExtensions() {
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions;
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "Simplify"
+    if (enableValidationLayers) {
+        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    }
+#pragma clang diagnostic pop
+
+    extensions.reserve(glfwExtensionCount);
+    for(uint32_t i = 0; i < glfwExtensionCount; i++) {
+        extensions.emplace_back(glfwExtensions[i]);
+    }
+    extensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME); // required on macOSX
+    return extensions;
+}
+
+static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+        VkDebugUtilsMessageTypeFlagsEXT messageType,
+        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+        void* pUserData) {
+
+    if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+        std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+    }
+    return VK_FALSE;
+}
+
+VkResult CreateDebugUtilsMessengerEXT(
+        VkInstance instance,
+        const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+        const VkAllocationCallbacks* pAllocator,
+        VkDebugUtilsMessengerEXT* pDebugMessenger) {
+    auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+    if (func != nullptr) {
+        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+    } else {
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+}
+
+void DestroyDebugUtilsMessengerEXT(
+        VkInstance instance,
+        VkDebugUtilsMessengerEXT debugMessenger,
+        const VkAllocationCallbacks* pAllocator) {
+    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+    if (func != nullptr) {
+        func(instance, debugMessenger, pAllocator);
+    }
+}
+
 
 void hello_triangle::initWindow() {
     glfwInit();
@@ -72,25 +130,11 @@ void hello_triangle::createVkInstance() {
     VkInstanceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo = &appInfo;
+    createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR; // required on macOS
 
-    uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions;
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-    createInfo.enabledExtensionCount = glfwExtensionCount;
-    createInfo.ppEnabledExtensionNames = glfwExtensions;
-
-    createInfo.enabledLayerCount = 0;
-
-    // required on macOS
-    std::vector<const char*> requiredExtensions;
-    requiredExtensions.reserve(glfwExtensionCount);
-    for(uint32_t i = 0; i < glfwExtensionCount; i++) {
-        requiredExtensions.emplace_back(glfwExtensions[i]);
-    }
-    requiredExtensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
-    createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
-    createInfo.enabledExtensionCount = (uint32_t) requiredExtensions.size();
-    createInfo.ppEnabledExtensionNames = requiredExtensions.data();
+    auto extensions = getRequiredExtensions();
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+    createInfo.ppEnabledExtensionNames = extensions.data();
 
     // validation layers
 #pragma clang diagnostic push
@@ -103,14 +147,23 @@ void hello_triangle::createVkInstance() {
         createInfo.ppEnabledLayerNames = validationLayers.data();
     } else {
         createInfo.enabledLayerCount = 0;
+        createInfo.pNext = nullptr;
     }
 #pragma clang diagnostic pop
-    // TODO define a callback function:
-    // https://vulkan-tutorial.com/en/Drawing_a_triangle/Setup/Validation_layers#page_Message-callback
 
     // creating the instance
-    if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create instance!");
+    VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
+    if (result != VK_SUCCESS) {
+        if (result == VK_ERROR_LAYER_NOT_PRESENT) {
+            throw std::runtime_error("failed to create instance: VK_ERROR_LAYER_NOT_PRESENT\n");
+        } else if (result == VK_ERROR_EXTENSION_NOT_PRESENT) {
+            throw std::runtime_error("failed to create instance: VK_ERROR_EXTENSION_NOT_PRESENT\n");
+        } else if (result == VK_ERROR_INCOMPATIBLE_DRIVER) {
+            throw std::runtime_error("failed to create instance: VK_ERROR_INCOMPATIBLE_DRIVER\n");
+        } else {
+            std::cout << "VkResult:" << result;
+            throw std::runtime_error("failed to create instance: unknown error\n");
+        }
     }
 }
 
@@ -124,6 +177,7 @@ void hello_triangle::pickPhysicalDevice() {
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
+    std::cout << devices.size() << " devices found.\n";
     for (const auto& device : devices) {
         if (isDeviceSuitable(device)) {
             physicalDevice = device;
@@ -136,9 +190,40 @@ void hello_triangle::pickPhysicalDevice() {
     }
 }
 
+void hello_triangle::createLogicalDevice() {
+//    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+//
+//    VkDeviceQueueCreateInfo queueCreateInfo{};
+//    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+//    queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
+//    queueCreateInfo.queueCount = 1;
+
+}
+
+void hello_triangle::setupDebugMessenger() {
+    if (!enableValidationLayers) return;
+
+    VkDebugUtilsMessengerCreateInfoEXT createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
+            | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
+            | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+            | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
+            | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    createInfo.pfnUserCallback = debugCallback;
+    createInfo.pUserData = nullptr; // Optional
+
+    if (CreateDebugUtilsMessengerEXT(instance,&createInfo,nullptr, &debugMessenger) != VK_SUCCESS) {
+        throw std::runtime_error("failed to set up debug messenger!");
+    }
+}
+
 void hello_triangle::initVulkan() {
     createVkInstance();
     pickPhysicalDevice();
+    createLogicalDevice();
+    setupDebugMessenger();
 }
 
 void hello_triangle::mainLoop() {
@@ -148,6 +233,10 @@ void hello_triangle::mainLoop() {
 }
 
 void hello_triangle::cleanup() {
+    if (enableValidationLayers) {
+        DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+    }
+
     vkDestroyInstance(instance, nullptr);
     // physicalDevice is implicitly destroyed when instance is
     glfwDestroyWindow(window);
