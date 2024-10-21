@@ -4,6 +4,7 @@
 #include <vector>
 #include <iostream>
 #include "hello_triangle.h"
+#include <optional>
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -21,6 +22,33 @@ const bool enableValidationLayers = false;
 // which would make createVkInstance() throw an error
 const bool enableValidationLayers = true;
 #endif
+
+struct QueueFamilyIndices {
+    std::optional<uint32_t> graphicsFamily;
+};
+
+QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
+    QueueFamilyIndices indices;
+    // Logic to find queue family indices to populate struct with
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(
+            device, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(
+            device, &queueFamilyCount, queueFamilies.data());
+
+    int i = 0;
+    for (const auto& queueFamily : queueFamilies) {
+        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+            indices.graphicsFamily = i;
+            break;
+        }
+        i++;
+    }
+
+    return indices;
+}
 
 bool checkValidationLayerSupport() {
     uint32_t layerCount;
@@ -48,7 +76,10 @@ bool isDeviceSuitable(VkPhysicalDevice device) {
     VkPhysicalDeviceFeatures deviceFeatures;
     vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
-    return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+    QueueFamilyIndices indices = findQueueFamilies(device);
+
+    return indices.graphicsFamily.has_value()
+        && deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 }
 
 std::vector<const char*> getRequiredExtensions() {
