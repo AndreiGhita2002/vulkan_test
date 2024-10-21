@@ -21,6 +21,8 @@ private:
     VkInstance instance;
     VkPhysicalDevice physicalDevice;
     VkDebugUtilsMessengerEXT debugMessenger;
+    VkDevice device; // logical device
+    VkQueue graphicsQueue;
 
     void initWindow();
     void initVulkan();
