@@ -25,6 +25,10 @@ private:
     VkQueue graphicsQueue;
     VkSurfaceKHR surface;
     VkQueue presentQueue;
+    VkSwapchainKHR swapChain;
+    std::vector<VkImage> swapChainImages;
+    VkFormat swapChainImageFormat;
+    VkExtent2D swapChainExtent;
 
     void initWindow();
     void initVulkan();
@@ -33,6 +37,7 @@ private:
     void pickPhysicalDevice();
     void createLogicalDevice();
     void setupDebugMessenger();
+    void createSwapChain();
     void mainLoop();
     void cleanup();
 };
