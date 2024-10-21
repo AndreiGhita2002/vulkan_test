@@ -29,6 +29,7 @@ private:
     std::vector<VkImage> swapChainImages;
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
+    std::vector<VkImageView> swapChainImageViews;
 
     void initWindow();
     void initVulkan();
@@ -38,6 +39,7 @@ private:
     void createLogicalDevice();
     void setupDebugMessenger();
     void createSwapChain();
+    void createImageViews();
     void mainLoop();
     void cleanup();
 };
