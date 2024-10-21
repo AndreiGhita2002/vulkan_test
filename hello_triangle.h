@@ -23,10 +23,13 @@ private:
     VkDebugUtilsMessengerEXT debugMessenger;
     VkDevice device; // logical device
     VkQueue graphicsQueue;
+    VkSurfaceKHR surface;
+    VkQueue presentQueue;
 
     void initWindow();
     void initVulkan();
     void createVkInstance();
+    void createSurface();
     void pickPhysicalDevice();
     void createLogicalDevice();
     void setupDebugMessenger();
