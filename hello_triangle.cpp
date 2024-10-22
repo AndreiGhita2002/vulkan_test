@@ -324,9 +324,9 @@ void hello_triangle::pickPhysicalDevice() {
     vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
     std::cout << devices.size() << " devices found.\n";
-    for (const auto& device : devices) {
-        if (isDeviceSuitable(device, surface)) {
-            physicalDevice = device;
+    for (const auto& p_device : devices) {
+        if (isDeviceSuitable(p_device, surface)) {
+            physicalDevice = p_device;
             break;
         }
     }
