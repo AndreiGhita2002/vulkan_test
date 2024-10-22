@@ -121,7 +121,6 @@ VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwi
         return capabilities.currentExtent;
     } else {
         int width, height;
-        // TODO YOU WERE HERE ---------------
         glfwGetFramebufferSize(window, &width, &height);
 
         VkExtent2D actualExtent = {
