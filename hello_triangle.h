@@ -33,6 +33,13 @@ private:
     VkRenderPass renderPass;
     VkPipelineLayout pipelineLayout;
     VkPipeline graphicsPipeline;
+    std::vector<VkFramebuffer> swapChainFramebuffers;
+    VkCommandPool commandPool;
+    VkCommandBuffer commandBuffer;
+    VkSemaphore imageAvailableSemaphore;
+    VkSemaphore renderFinishedSemaphore;
+    VkFence inFlightFence;
+    const int MAX_FRAMES_IN_FLIGHT = 2;
 
     void initWindow();
     void initVulkan();
@@ -45,6 +52,12 @@ private:
     void createImageViews();
     void createRenderPass();
     void createGraphicsPipeline();
+    void createFramebuffers();
+    void createCommandPool();
+    void createCommandBuffer();
+    void recordCommandBuffer(VkCommandBuffer cmdBuffer, uint32_t imageIndex);
+    void createSyncObjects();
+    void drawFrame();
     void mainLoop();
     void cleanup();
 };
