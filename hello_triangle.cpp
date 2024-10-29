@@ -806,7 +806,6 @@ void hello_triangle::createSyncObjects() {
             throw std::runtime_error("failed to create synchronization objects for a frame!");
         }
     }
-
 }
 
 void hello_triangle::initVulkan() {
